@@ -2,7 +2,7 @@
 This workspace contains a project for implementing secure communication between an ATM client and a Bank server. The project is organized into two three main Java modules, built with Gradle.
 
 ## Project Structure
-- **common**: - Common library with shared classes
+- **common**: Common library with shared classes
 - **bank**: Bank server module
 - **atm**: ATM client module
 
