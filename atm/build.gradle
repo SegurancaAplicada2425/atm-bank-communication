@@ -1,11 +1,16 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.gradleup.shadow' version "8.3.6"
+    id 'com.gradleup.shadow' version '8.3.6'
 }
 
 group = 'com.atmbank'
 version = '1.0.0'
+
+java {
+    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_16
+}
 
 application {
     mainClass = 'com.atmbank.atm.Main'
