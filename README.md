@@ -7,7 +7,7 @@ This workspace contains a project for implementing secure communication between 
 - **atm**: ATM client module
 
 ## Prerequisites
-- Java JDK 14 or higher
+- Java JDK 16 or higher
 
 ## Setup
 
