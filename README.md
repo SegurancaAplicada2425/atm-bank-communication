@@ -10,7 +10,6 @@ This workspace contains a project for implementing secure communication between 
 - Java JDK 16 or higher
 
 ## Setup
-
 1. Clone the project
     ```bash
     git clone https://github.com/SegurancaAplicada2425/atm-bank-communication
