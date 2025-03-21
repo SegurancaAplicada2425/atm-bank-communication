@@ -1,0 +1,3 @@
+rootProject.name = 'atm-bank-communication'
+
+include 'atm', 'bank', 'common'
