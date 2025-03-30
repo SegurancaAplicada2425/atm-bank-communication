@@ -1,9 +1,9 @@
 package com.atmbank.common.message.request;
 
+import java.io.Serial;
+
 import com.atmbank.common.message.Message;
 import com.atmbank.common.message.MessageType;
-
-import java.io.Serial;
 
 public class WithdrawRequest extends Message {
     @Serial

@@ -1,9 +1,9 @@
 package com.atmbank.common.message.request;
 
+import java.io.Serial;
+
 import com.atmbank.common.message.Message;
 import com.atmbank.common.message.MessageType;
-
-import java.io.Serial;
 
 public class CreateAccountRequest extends Message {
     @Serial
@@ -28,6 +28,7 @@ public class CreateAccountRequest extends Message {
 
     @Override
     public String toString() {
-        return String.format("CreateAccountRequest{type='%s', accountNumber='%s', initialBalance=%.2f}", getType(), accountNumber, initialBalance);
+        return String.format("CreateAccountRequest{type='%s', accountNumber='%s', initialBalance=%.2f}", getType(),
+                accountNumber, initialBalance);
     }
 }

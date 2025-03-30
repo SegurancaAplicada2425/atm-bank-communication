@@ -1,9 +1,9 @@
 package com.atmbank.bank.repository;
 
-import com.atmbank.bank.model.Account;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.atmbank.bank.model.Account;
 
 public class InMemoryAccountRepository implements AccountRepository {
     private final Map<String, Account> accounts = new ConcurrentHashMap<>();

@@ -1,8 +1,8 @@
 package com.atmbank.common.message.response;
 
-import com.atmbank.common.message.MessageType;
-
 import java.io.Serial;
+
+import com.atmbank.common.message.MessageType;
 
 public class ErrorResponse extends Response {
     @Serial

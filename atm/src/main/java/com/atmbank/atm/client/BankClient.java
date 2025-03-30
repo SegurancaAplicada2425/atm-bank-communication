@@ -1,22 +1,31 @@
 package com.atmbank.atm.client;
 
-import com.atmbank.common.logger.ConsoleLogger;
-import com.atmbank.common.logger.Logger;
-import com.atmbank.common.message.Message;
-import com.atmbank.common.message.request.*;
-import com.atmbank.common.message.response.*;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+import com.atmbank.atm.security.SecurityContext;
+import com.atmbank.common.logger.ConsoleLogger;
+import com.atmbank.common.logger.Logger;
+import com.atmbank.common.message.Message;
+import com.atmbank.common.message.request.AuthenticateRequest;
+import com.atmbank.common.message.request.CreateAccountRequest;
+import com.atmbank.common.message.request.DepositRequest;
+import com.atmbank.common.message.request.GetBalanceRequest;
+import com.atmbank.common.message.request.WithdrawRequest;
+import com.atmbank.common.message.response.AuthenticateResponse;
+import com.atmbank.common.message.response.CreateAccountResponse;
+import com.atmbank.common.message.response.DepositResponse;
+import com.atmbank.common.message.response.GetBalanceResponse;
+import com.atmbank.common.message.response.WithdrawResponse;
+
 public class BankClient {
-    private static final Logger LOGGER = new ConsoleLogger();
+    private static final Logger logger = new ConsoleLogger(); // TODO: Change to NullLogger before delivery
 
     private final String serverAddress;
     private final int serverPort;
-    private final String authFile;
+    private final SecurityContext securityContext;
 
     private Socket socket;
     private ObjectOutputStream out;
@@ -24,10 +33,10 @@ public class BankClient {
     private boolean connected;
     private boolean authenticated;
 
-    public BankClient(String serverAddress, int serverPort, String authFile) {
+    public BankClient(String serverAddress, int serverPort, String authFile, SecurityContext securityContext) {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
-        this.authFile = authFile;
+        this.securityContext = securityContext;
         this.connected = false;
         this.authenticated = false;
     }
@@ -38,8 +47,8 @@ public class BankClient {
             setupStreams();
             connected = true;
 
-            authenticate();
-        } catch (IOException | ClassNotFoundException e) {
+            performHandshake();
+        } catch (IOException e) {
             disconnect();
             throw new IOException("Failed to connect to the bank server: " + e.getMessage(), e);
         }
@@ -50,15 +59,8 @@ public class BankClient {
         in = new ObjectInputStream(socket.getInputStream());
     }
 
-    private void authenticate() throws IOException, ClassNotFoundException {
-        sendMessage(new AuthenticateRequest("client"));
-        Message response = receiveResponse();
-
-        if (response instanceof AuthenticateResponse authenticateResponse && authenticateResponse.isAuthenticated()) {
-            authenticated = true;
-        } else {
-            throw new IOException("Authentication failed");
-        }
+    private void performHandshake() {
+        // TODO: Implement handshake logic
     }
 
     public void disconnect() {
@@ -76,28 +78,30 @@ public class BankClient {
                 socket.close();
             }
         } catch (IOException e) {
-            LOGGER.error("Error closing connection: %s", e.getMessage());
+            logger.error("Error closing connection: %s", e.getMessage());
         }
     }
 
     public void createAccount(String accountNumber, double initialBalance) throws IOException, ClassNotFoundException {
-        checkConnectionAndAuthentication();
+        checkConnection();
 
         sendMessage(new CreateAccountRequest(accountNumber, initialBalance));
         Message response = receiveResponse();
 
         if (response instanceof CreateAccountResponse createAccountResponse) {
             if (createAccountResponse.isSuccess()) {
-                LOGGER.info("Account creation successful");
+                logger.info("Account creation successful");
             } else {
-                LOGGER.error("Account creation failed: %s", createAccountResponse.getStatus());
+                logger.error("Account creation failed: %s", createAccountResponse.getStatus());
             }
         } else {
-            LOGGER.error("Unexpected response type");
+            logger.error("Unexpected response type");
         }
     }
 
     public void deposit(String accountNumber, double amount) throws IOException, ClassNotFoundException {
+        authenticate();
+
         checkConnectionAndAuthentication();
 
         sendMessage(new DepositRequest(accountNumber, amount));
@@ -105,16 +109,18 @@ public class BankClient {
 
         if (response instanceof DepositResponse depositResponse) {
             if (depositResponse.isSuccess()) {
-                LOGGER.info("Deposit successful");
+                logger.info("Deposit successful");
             } else {
-                LOGGER.error("Deposit failed: %s", depositResponse.getStatus());
+                logger.error("Deposit failed: %s", depositResponse.getStatus());
             }
         } else {
-            LOGGER.error("Unexpected response type");
+            logger.error("Unexpected response type");
         }
     }
 
     public void withdraw(String accountNumber, double amount) throws IOException, ClassNotFoundException {
+        authenticate();
+
         checkConnectionAndAuthentication();
 
         sendMessage(new WithdrawRequest(accountNumber, amount));
@@ -122,16 +128,18 @@ public class BankClient {
 
         if (response instanceof WithdrawResponse withdrawResponse) {
             if (withdrawResponse.isSuccess()) {
-                LOGGER.info("Withdrawal successful");
+                logger.info("Withdrawal successful");
             } else {
-                LOGGER.error("Withdrawal failed: %s", withdrawResponse.getStatus());
+                logger.error("Withdrawal failed: %s", withdrawResponse.getStatus());
             }
         } else {
-            LOGGER.error("Unexpected response type");
+            logger.error("Unexpected response type");
         }
     }
 
     public double getBalance(String accountNumber) throws IOException, ClassNotFoundException {
+        authenticate();
+
         checkConnectionAndAuthentication();
 
         sendMessage(new GetBalanceRequest(accountNumber));
@@ -139,7 +147,7 @@ public class BankClient {
 
         if (response instanceof GetBalanceResponse balanceResponse) {
             if (!balanceResponse.isSuccess()) {
-                LOGGER.error("Balance inquiry failed: %s", balanceResponse.getStatus());
+                logger.error("Balance inquiry failed: %s", balanceResponse.getStatus());
                 return 0.0;
             }
             Double balance = balanceResponse.getBalance();
@@ -148,17 +156,18 @@ public class BankClient {
             }
         }
 
-        LOGGER.error("Invalid balance response");
+        logger.error("Invalid balance response");
         return 0.0;
     }
 
-    private void checkConnectionAndAuthentication() throws IOException {
-        if (!connected) {
-            throw new IOException("Not connected to the bank server");
-        }
+    private void authenticate() throws IOException, ClassNotFoundException {
+        sendMessage(new AuthenticateRequest("client"));
+        Message response = receiveResponse();
 
-        if (!authenticated) {
-            throw new IOException("Not authenticated with the bank server");
+        if (response instanceof AuthenticateResponse authenticateResponse && authenticateResponse.isAuthenticated()) {
+            authenticated = true;
+        } else {
+            throw new IOException("Authentication failed");
         }
     }
 
@@ -169,5 +178,22 @@ public class BankClient {
 
     private Message receiveResponse() throws IOException, ClassNotFoundException {
         return (Message) in.readObject();
+    }
+
+    private void checkConnection() throws IOException {
+        if (!connected) {
+            throw new IOException("Not connected to the bank server");
+        }
+    }
+
+    private void checkAuthentication() throws IOException {
+        if (!authenticated) {
+            throw new IOException("Not authenticated with the bank server");
+        }
+    }
+
+    private void checkConnectionAndAuthentication() throws IOException {
+        checkConnection();
+        checkAuthentication();
     }
 }

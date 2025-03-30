@@ -1,0 +1,20 @@
+task buildProject(dependsOn: [':atm:shadowJar', ':bank:shadowJar']) {
+    doLast {
+        def outputDir = file("$rootDir/build/libs")
+        if (!outputDir.exists()) {
+            outputDir.mkdirs()
+        }
+
+        copy {
+            from project(':atm').tasks.shadowJar.archivePath
+            into(outputDir)
+            include '*-all.jar'
+        }
+
+        copy {
+            from project(':bank').tasks.shadowJar.archivePath
+            into(outputDir)
+            include '*-all.jar'
+        }
+    }
+}

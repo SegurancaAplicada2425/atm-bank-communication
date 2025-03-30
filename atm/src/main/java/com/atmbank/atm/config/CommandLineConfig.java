@@ -1,6 +1,11 @@
 package com.atmbank.atm.config;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 public class CommandLineConfig {
     private static final String AUTH_FILE_OPTION = "s";
@@ -123,10 +128,14 @@ public class CommandLineConfig {
 
     private void validateOperationType() throws ParseException {
         int operationCount = 0;
-        if (createAccountOperation) operationCount++;
-        if (depositOperation) operationCount++;
-        if (withdrawOperation) operationCount++;
-        if (getBalanceOperation) operationCount++;
+        if (createAccountOperation)
+            operationCount++;
+        if (depositOperation)
+            operationCount++;
+        if (withdrawOperation)
+            operationCount++;
+        if (getBalanceOperation)
+            operationCount++;
 
         if (operationCount != 1) {
             throw new ParseException("Exactly one operation type (-n, -d, -w, -g) must be specified");

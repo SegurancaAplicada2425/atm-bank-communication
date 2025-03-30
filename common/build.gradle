@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 group = 'com.atmbank'
@@ -15,4 +15,5 @@ repositories {
 }
 
 dependencies {
+    implementation 'commons-codec:commons-codec:1.18.0'
 }

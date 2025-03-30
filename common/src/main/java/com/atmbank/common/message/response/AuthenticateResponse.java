@@ -1,8 +1,8 @@
 package com.atmbank.common.message.response;
 
-import com.atmbank.common.message.MessageType;
-
 import java.io.Serial;
+
+import com.atmbank.common.message.MessageType;
 
 public class AuthenticateResponse extends Response {
     @Serial
@@ -11,7 +11,8 @@ public class AuthenticateResponse extends Response {
     private final boolean authenticated;
 
     public AuthenticateResponse(boolean authenticated) {
-        super(MessageType.AUTHENTICATE, authenticated ? ResponseStatus.SUCCESS : ResponseStatus.AUTHENTICATION_REQUIRED);
+        super(MessageType.AUTHENTICATE,
+                authenticated ? ResponseStatus.SUCCESS : ResponseStatus.AUTHENTICATION_REQUIRED);
         this.authenticated = authenticated;
     }
 
@@ -21,6 +22,7 @@ public class AuthenticateResponse extends Response {
 
     @Override
     public String toString() {
-        return String.format("AuthenticateResponse{type='%s', status='%s', authenticated=%b}", getType(), getStatus(), authenticated);
+        return String.format("AuthenticateResponse{type='%s', status='%s', authenticated=%b}", getType(), getStatus(),
+                authenticated);
     }
 }
