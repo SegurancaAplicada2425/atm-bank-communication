@@ -1,10 +1,11 @@
 package com.atmbank.common.config;
 
 public class Constants {
-    public static final boolean DEBUG_MODE = false;
+    public static final boolean DEBUG_MODE = true;
     public static final int PIN_SIZE = 128;
     public static final int MIN_ACCOUNT_INITIAL_BALANCE = 10;
     public static final int CONNECTION_TIMEOUT = 10000; // 10 seconds
+    public static final int MAX_CONNECTIONS = 10;
 
     // Error codes
     public static final int SUCCESS_CODE = 0;

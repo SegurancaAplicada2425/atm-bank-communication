@@ -121,46 +121,34 @@ public class ClientHandler {
         String accountPin = request.getAccountPin();
         double initialBalance = request.getInitialBalance();
 
-        Account existingAccount = accountRepository.findById(accountNumber);
-        if (existingAccount != null) {
-            sendResponse(new CreateAccountResponse(ResponseStatus.ACCOUNT_EXISTS));
-            debugLogger.info("%s tried to create existing account: %s", getConnectionIdentifier(), request);
-            return;
-        }
-
-        Account newAccount;
         try {
-            newAccount = new Account(accountNumber, accountPin, initialBalance);
+            boolean success = accountRepository.createAccount(accountNumber, accountPin, initialBalance);
+            if (!success) {
+                sendResponse(new CreateAccountResponse(ResponseStatus.ERROR));
+                debugLogger.info("Account creation failed for account: %s", accountNumber);
+                return;
+            }
+            display.display("{\"account:\"%s\",\"initial_balance\":%.2f}", accountNumber, initialBalance);
+            sendResponse(new CreateAccountResponse(ResponseStatus.SUCCESS));
         } catch (IllegalArgumentException e) {
             sendResponse(new CreateAccountResponse(ResponseStatus.INVALID_AMOUNT));
             debugLogger.info("%s tried to create an invalid account: %s", getConnectionIdentifier(), request);
-            return;
         }
-        accountRepository.save(newAccount);
-        display.display("{\"account:\"%s\",\"initial_balance\":%.2f}", accountNumber, initialBalance);
-        sendResponse(new CreateAccountResponse(ResponseStatus.SUCCESS));
     }
 
     private void handleDepositRequest(DepositRequest request) throws ProtocolException {
+        String accountNumber = request.getAccountNumber();
+        String accountPin = request.getAccountPin();
         double amount = request.getAmount();
 
-        if (amount <= 0) {
-            sendResponse(new DepositResponse(ResponseStatus.INVALID_AMOUNT));
-            debugLogger.info("%s tried to deposit an invalid amount to account: %s", getConnectionIdentifier(), request);
-            return;
-        }
-
-        Account account = getAccount(request);
-        if (account == null) {
-            sendResponse(new DepositResponse(ResponseStatus.ACCOUNT_NOT_FOUND));
-            debugLogger.info("%s tried to deposit to account: %s", getConnectionIdentifier(), request);
-            return;
-        }
-
         try {
-            account.deposit(amount);
-            accountRepository.save(account);
-            display.display("{\"account:\"%s\",\"deposit\":%.2f}", request.getAccountNumber(), amount);
+            boolean success = accountRepository.deposit(accountNumber, accountPin, amount);
+            if (!success) {
+                sendResponse(new DepositResponse(ResponseStatus.ERROR));
+                debugLogger.info("Deposit failed for account: %s", accountNumber);
+                return;
+            }
+            display.display("{\"account:\"%s\",\"deposit\":%.2f}", accountNumber, amount);
             sendResponse(new DepositResponse(ResponseStatus.SUCCESS));
         } catch (IllegalArgumentException e) {
             sendResponse(new DepositResponse(ResponseStatus.INVALID_AMOUNT));
@@ -169,50 +157,38 @@ public class ClientHandler {
     }
 
     private void handleWithdrawRequest(WithdrawRequest request) throws ProtocolException {
+        String accountNumber = request.getAccountNumber();
+        String accountPin = request.getAccountPin();
         double amount = request.getAmount();
 
-        if (amount <= 0) {
-            sendResponse(new WithdrawResponse(ResponseStatus.INVALID_AMOUNT));
-            debugLogger.info("%s tried to withdraw an invalid amount from account: %s", getConnectionIdentifier(), request);
-            return;
-        }
-
-        Account account = getAccount(request);
-        if (account == null) {
-            sendResponse(new WithdrawResponse(ResponseStatus.ACCOUNT_NOT_FOUND));
-            debugLogger.info("%s tried to withdraw from account: %s", getConnectionIdentifier(), request);
-            return;
-        }
-
         try {
-            account.withdraw(amount);
-            accountRepository.save(account);
-            display.display("{\"account:\"%s\",\"withdraw\":%.2f}", request.getAccountNumber(), amount);
+            boolean success = accountRepository.withdraw(accountNumber, accountPin, amount);
+            if (!success) {
+                sendResponse(new WithdrawResponse(ResponseStatus.ERROR));
+                debugLogger.info("Withdraw failed for account: %s", accountNumber);
+                return;
+            }
+            display.display("{\"account:\"%s\",\"withdraw\":%.2f}", accountNumber, amount);
             sendResponse(new WithdrawResponse(ResponseStatus.SUCCESS));
         } catch (IllegalArgumentException e) {
-            sendResponse(new WithdrawResponse(ResponseStatus.INSUFFICIENT_BALANCE));
-            debugLogger.info("%s tried to withdraw from account with insufficient balance: %s", getConnectionIdentifier(), request);
+            sendResponse(new WithdrawResponse(ResponseStatus.INVALID_AMOUNT));
+            debugLogger.info("%s tried to withdraw an invalid amount from account: %s", getConnectionIdentifier(), request);
         }
     }
 
     private void handleGetBalanceRequest(GetBalanceRequest request) throws ProtocolException {
-        Account account = getAccount(request);
+        String accountNumber = request.getAccountNumber();
+        String accountPin = request.getAccountPin();
+
+        Account account = accountRepository.getAccount(accountNumber, accountPin);
         if (account == null) {
             sendResponse(new GetBalanceResponse(ResponseStatus.ACCOUNT_NOT_FOUND));
-            debugLogger.info("%s tried to get balance for account: %s", getConnectionIdentifier(), request);
+            debugLogger.info("%s tried to get balance for an invalid account: %s", getConnectionIdentifier(), request);
             return;
         }
 
-        display.display("{\"account:\"%s\",\"balance\":%.2f}", request.getAccountNumber(), account.getBalance());
+        display.display("{\"account:\"%s\",\"balance\":%.2f}", accountNumber, account.getBalance());
         sendResponse(new GetBalanceResponse(account.getBalance()));
-    }
-
-    private Account getAccount(OperationRequest request) {
-        Account account = accountRepository.findById(request.getAccountNumber());
-        if (account == null || !account.getAccountPin().equals(request.getAccountPin())) {
-            return null;
-        }
-        return account;
     }
 
     private Request receiveRequest() throws IOException, ProtocolException {
