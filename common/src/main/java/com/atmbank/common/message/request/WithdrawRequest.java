@@ -1,25 +1,21 @@
 package com.atmbank.common.message.request;
 
-import java.io.Serial;
-
-import com.atmbank.common.message.Message;
 import com.atmbank.common.message.MessageType;
 
-public class WithdrawRequest extends Message {
+import java.io.Serial;
+
+public class WithdrawRequest extends OperationRequest {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private final String accountNumber;
     private final double amount;
 
-    public WithdrawRequest(String accountNumber, double amount) {
-        super(MessageType.WITHDRAW);
-        this.accountNumber = accountNumber;
+    public WithdrawRequest(String accountNumber, String accountPin, double amount) {
+        super(MessageType.WITHDRAW, accountNumber, accountPin);
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Withdrawal amount must be positive");
+        }
         this.amount = amount;
-    }
-
-    public String getAccountNumber() {
-        return accountNumber;
     }
 
     public double getAmount() {
@@ -28,7 +24,6 @@ public class WithdrawRequest extends Message {
 
     @Override
     public String toString() {
-        return String.format("WithdrawRequest{type='%s', accountNumber='%s', amount=%.2f}",
-                getType(), accountNumber, amount);
+        return String.format("WithdrawRequest{type='%s', accountNumber='%s', accountPin='%s', amount=%.2f}", getType(), getAccountNumber(), getAccountPin(), amount);
     }
 }

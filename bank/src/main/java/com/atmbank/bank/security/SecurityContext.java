@@ -1,28 +1,28 @@
 package com.atmbank.bank.security;
 
-import java.security.Key;
-import java.security.KeyPair;
-
 public class SecurityContext {
-    private final byte[] secret;
-    private final Key key;
-    private final KeyPair keyPair;
+    private final byte[] bankPrivateKey;
+    private final byte[] bankPublicKey;
+    private byte[] atmKey;
 
-    public SecurityContext(byte[] secret, Key key, KeyPair keyPair) {
-        this.secret = secret;
-        this.key = key;
-        this.keyPair = keyPair;
+    public SecurityContext(byte[] bankPrivateKey, byte[] bankPublicKey) {
+        this.bankPrivateKey = bankPrivateKey;
+        this.bankPublicKey = bankPublicKey;
     }
 
-    public byte[] getSecret() {
-        return secret;
+    public byte[] getBankPrivateKey() {
+        return bankPrivateKey;
     }
 
-    public Key getKey() {
-        return key;
+    public byte[] getBankPublicKey() {
+        return bankPublicKey;
     }
 
-    public KeyPair getKeyPair() {
-        return keyPair;
+    public byte[] getAtmKey() {
+        return atmKey;
+    }
+
+    public void setAtmKey(byte[] atmKey) {
+        this.atmKey = atmKey;
     }
 }

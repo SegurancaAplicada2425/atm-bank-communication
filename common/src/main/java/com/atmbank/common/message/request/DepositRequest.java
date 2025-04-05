@@ -1,25 +1,21 @@
 package com.atmbank.common.message.request;
 
-import java.io.Serial;
-
-import com.atmbank.common.message.Message;
 import com.atmbank.common.message.MessageType;
 
-public class DepositRequest extends Message {
+import java.io.Serial;
+
+public class DepositRequest extends OperationRequest {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private final String accountNumber;
     private final double amount;
 
-    public DepositRequest(String accountNumber, double amount) {
-        super(MessageType.DEPOSIT);
-        this.accountNumber = accountNumber;
+    public DepositRequest(String accountNumber, String accountPin, double amount) {
+        super(MessageType.DEPOSIT, accountNumber, accountPin);
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive");
+        }
         this.amount = amount;
-    }
-
-    public String getAccountNumber() {
-        return accountNumber;
     }
 
     public double getAmount() {
@@ -28,7 +24,6 @@ public class DepositRequest extends Message {
 
     @Override
     public String toString() {
-        return String.format("DepositRequest{type='%s', accountNumber='%s', amount=%.2f}",
-                getType(), accountNumber, amount);
+        return String.format("DepositRequest{type='%s', accountNumber='%s', accountPin='%s', amount=%.2f}", getType(), getAccountNumber(), getAccountPin(), amount);
     }
 }

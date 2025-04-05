@@ -1,4 +1,4 @@
-package com.atmbank.atm.exception;
+package com.atmbank.atm.security.authfile;
 
 import java.io.Serial;
 
@@ -7,7 +7,7 @@ public class AuthFileNotFoundException extends Exception {
     private static final long serialVersionUID = 1L;
 
     public AuthFileNotFoundException() {
-        super("Auth file already exists");
+        super("Auth file doesn't exists");
     }
 
     public AuthFileNotFoundException(String message) {

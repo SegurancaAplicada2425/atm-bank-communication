@@ -1,9 +1,9 @@
 package com.atmbank.common.message.response;
 
-import java.io.Serial;
-
 import com.atmbank.common.message.Message;
 import com.atmbank.common.message.MessageType;
+
+import java.io.Serial;
 
 public abstract class Response extends Message {
     @Serial

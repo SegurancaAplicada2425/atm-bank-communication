@@ -1,9 +1,9 @@
 package com.atmbank.bank.repository;
 
+import com.atmbank.bank.model.Account;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.atmbank.bank.model.Account;
 
 public class InMemoryAccountRepository implements AccountRepository {
     private final Map<String, Account> accounts = new ConcurrentHashMap<>();
@@ -17,13 +17,5 @@ public class InMemoryAccountRepository implements AccountRepository {
     public Account save(Account account) {
         accounts.put(account.getAccountNumber(), account);
         return account;
-    }
-
-    @Override
-    public void updateBalance(String accountNumber, double newBalance) {
-        Account account = accounts.get(accountNumber);
-        if (account != null) {
-            account.setBalance(newBalance);
-        }
     }
 }

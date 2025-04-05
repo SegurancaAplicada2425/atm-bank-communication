@@ -1,8 +1,8 @@
 package com.atmbank.common.message.response;
 
-import java.io.Serial;
-
 import com.atmbank.common.message.MessageType;
+
+import java.io.Serial;
 
 public class WithdrawResponse extends Response {
     @Serial

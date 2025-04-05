@@ -1,12 +1,12 @@
-package com.atmbank.bank.security;
+package com.atmbank.bank.security.authfile;
+
+import com.atmbank.common.security.authfile.AuthFileData;
+import com.atmbank.common.utils.ConversionUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import com.atmbank.bank.exception.AuthFileAlreadyExistsException;
-import com.atmbank.common.security.AuthFileData;
 
 public class AuthFileGenerator {
     private final AuthFileData data;
@@ -20,7 +20,7 @@ public class AuthFileGenerator {
         if (Files.exists(path)) {
             throw new AuthFileAlreadyExistsException();
         }
-        byte[] content = data.toString().getBytes();
+        byte[] content = ConversionUtils.toBytes(data.toString());
         Files.write(path, content);
     }
 }

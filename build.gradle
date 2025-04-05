@@ -1,4 +1,5 @@
-task buildProject(dependsOn: [':atm:shadowJar', ':bank:shadowJar']) {
+tasks.register('buildProject') {
+    dependsOn(':atm:shadowJar', ':bank:shadowJar')
     doLast {
         def outputDir = file("$rootDir/build/libs")
         if (!outputDir.exists()) {

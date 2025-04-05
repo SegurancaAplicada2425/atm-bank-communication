@@ -1,17 +1,17 @@
 package com.atmbank.bank.server;
 
+import com.atmbank.bank.repository.AccountRepository;
+import com.atmbank.bank.security.SecurityContext;
+import com.atmbank.common.config.Constants;
+import com.atmbank.common.logger.ConditionalLogger;
+import com.atmbank.common.logger.Logger;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import com.atmbank.bank.handler.ClientHandler;
-import com.atmbank.bank.repository.AccountRepository;
-import com.atmbank.bank.security.SecurityContext;
-import com.atmbank.common.logger.ConsoleLogger;
-import com.atmbank.common.logger.Logger;
-
 public class BankServer {
-    private static final Logger logger = new ConsoleLogger(); // TODO: Change to NullLogger before delivery
+    private static final Logger debugLogger = new ConditionalLogger(Constants.DEBUG_MODE);
 
     private final int port;
     private final AccountRepository accountRepository;
@@ -28,17 +28,17 @@ public class BankServer {
     public void start() throws IOException {
         serverSocket = new ServerSocket(port);
         running = true;
-        logger.info("Bank server started on port %d", port);
+        debugLogger.info("Bank server started on port %d", port);
 
         while (running) {
             try {
                 Socket clientSocket = serverSocket.accept();
-                logger.info("New client connected: %s:%d", clientSocket.getInetAddress(), clientSocket.getPort());
+                debugLogger.info("New client connected: %s:%d", clientSocket.getInetAddress(), clientSocket.getPort());
                 ClientHandler clientHandler = new ClientHandler(clientSocket, accountRepository, securityContext);
                 clientHandler.handle();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 if (running) {
-                    logger.error("Error accepting client connection: %s", e.getMessage());
+                    debugLogger.error("Error accepting client connection: %s", e.getMessage());
                 }
             }
         }
@@ -51,10 +51,10 @@ public class BankServer {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                logger.error("Error closing server socket: %s", e.getMessage());
+                debugLogger.error("Error closing server socket: %s", e.getMessage());
             }
         }
 
-        logger.info("Bank server stopped");
+        debugLogger.info("Bank server stopped");
     }
 }

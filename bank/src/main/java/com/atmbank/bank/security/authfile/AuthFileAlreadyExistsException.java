@@ -1,4 +1,4 @@
-package com.atmbank.bank.exception;
+package com.atmbank.bank.security.authfile;
 
 import java.io.Serial;
 

@@ -1,4 +1,4 @@
-package com.atmbank.common.security;
+package com.atmbank.common.utils;
 
 import java.security.SecureRandom;
 

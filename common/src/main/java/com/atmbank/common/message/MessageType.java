@@ -1,12 +1,12 @@
 package com.atmbank.common.message;
 
 public enum MessageType {
-    AUTHENTICATE,
+    HANDSHAKE,
     CREATE_ACCOUNT,
     DEPOSIT,
     WITHDRAW,
     GET_BALANCE,
-    UNKNOWN;
+    ERROR;
 
     @Override
     public String toString() {

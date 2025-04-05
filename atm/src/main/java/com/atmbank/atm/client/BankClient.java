@@ -1,71 +1,91 @@
 package com.atmbank.atm.client;
 
+import com.atmbank.atm.security.SecurityContext;
+import com.atmbank.atm.security.protocol.ProtocolHandler;
+import com.atmbank.common.config.Constants;
+import com.atmbank.common.display.ConsoleDisplay;
+import com.atmbank.common.display.Display;
+import com.atmbank.common.logger.ConditionalLogger;
+import com.atmbank.common.logger.Logger;
+import com.atmbank.common.message.request.*;
+import com.atmbank.common.message.response.*;
+import com.atmbank.common.security.protocol.ProtocolException;
+
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 
-import com.atmbank.atm.security.SecurityContext;
-import com.atmbank.common.logger.ConsoleLogger;
-import com.atmbank.common.logger.Logger;
-import com.atmbank.common.message.Message;
-import com.atmbank.common.message.request.AuthenticateRequest;
-import com.atmbank.common.message.request.CreateAccountRequest;
-import com.atmbank.common.message.request.DepositRequest;
-import com.atmbank.common.message.request.GetBalanceRequest;
-import com.atmbank.common.message.request.WithdrawRequest;
-import com.atmbank.common.message.response.AuthenticateResponse;
-import com.atmbank.common.message.response.CreateAccountResponse;
-import com.atmbank.common.message.response.DepositResponse;
-import com.atmbank.common.message.response.GetBalanceResponse;
-import com.atmbank.common.message.response.WithdrawResponse;
-
 public class BankClient {
-    private static final Logger logger = new ConsoleLogger(); // TODO: Change to NullLogger before delivery
+    private static final Display display = new ConsoleDisplay();
+    private static final Logger debugLogger = new ConditionalLogger(Constants.DEBUG_MODE);
 
     private final String serverAddress;
     private final int serverPort;
-    private final SecurityContext securityContext;
+    private final ProtocolHandler protocolHandler;
 
     private Socket socket;
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
+    private PrintWriter out;
+    private BufferedReader in;
     private boolean connected;
-    private boolean authenticated;
 
-    public BankClient(String serverAddress, int serverPort, String authFile, SecurityContext securityContext) {
+    public BankClient(String serverAddress, int serverPort, SecurityContext securityContext) throws Exception {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
-        this.securityContext = securityContext;
+        this.protocolHandler = new ProtocolHandler(securityContext);
         this.connected = false;
-        this.authenticated = false;
     }
 
-    public void connect() throws IOException {
+    public void connect() throws Exception {
         try {
             socket = new Socket(serverAddress, serverPort);
             setupStreams();
             connected = true;
 
             performHandshake();
-        } catch (IOException e) {
+        } catch (Exception e) {
             disconnect();
-            throw new IOException("Failed to connect to the bank server: " + e.getMessage(), e);
+            throw new ProtocolException("Failed to connect to server: " + e.getMessage(), e);
         }
     }
 
     private void setupStreams() throws IOException {
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
+        socket.setSoTimeout(Constants.CONNECTION_TIMEOUT);
+        out = new PrintWriter(socket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
-    private void performHandshake() {
-        // TODO: Implement handshake logic
+    private void performHandshake() throws ProtocolException, IOException {
+        try {
+            String handshakeRequest = protocolHandler.getHandshakeRequest();
+            out.println(handshakeRequest);
+
+            String serverExchangeMessage = in.readLine();
+            if (serverExchangeMessage == null) {
+                throw new IOException("Server closed the connection during handshake");
+            }
+            protocolHandler.processServerExchangeMessage(serverExchangeMessage);
+
+            String clientExchangeMessage = protocolHandler.getClientExchangeMessage();
+            out.println(clientExchangeMessage);
+
+            String handshakeResponse = in.readLine();
+            if (handshakeResponse == null) {
+                throw new IOException("Server closed the connection during handshake");
+            }
+            protocolHandler.processHandshakeResponse(handshakeResponse);
+
+            debugLogger.info("Handshake completed with server: %s", socket.getRemoteSocketAddress());
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ProtocolException("Failed to perform handshake: " + e.getMessage(), e);
+        }
     }
 
     public void disconnect() {
         connected = false;
-        authenticated = false;
 
         try {
             if (out != null) {
@@ -78,122 +98,94 @@ public class BankClient {
                 socket.close();
             }
         } catch (IOException e) {
-            logger.error("Error closing connection: %s", e.getMessage());
+            debugLogger.error("Error closing connection: %s", e.getMessage());
         }
     }
 
-    public void createAccount(String accountNumber, double initialBalance) throws IOException, ClassNotFoundException {
+    public void createAccount(String accountNumber, String accountPin, double initialBalance) throws IOException, ProtocolException {
         checkConnection();
 
-        sendMessage(new CreateAccountRequest(accountNumber, initialBalance));
-        Message response = receiveResponse();
+        sendRequest(new CreateAccountRequest(accountNumber, accountPin, initialBalance));
+        Response response = receiveResponse();
 
         if (response instanceof CreateAccountResponse createAccountResponse) {
             if (createAccountResponse.isSuccess()) {
-                logger.info("Account creation successful");
+                display.display("{\"account:\"%s\",\"initial_balance\":%.2f}", accountNumber, initialBalance);
             } else {
-                logger.error("Account creation failed: %s", createAccountResponse.getStatus());
+                debugLogger.error("Account creation failed: %s", createAccountResponse.getStatus());
             }
         } else {
-            logger.error("Unexpected response type");
+            debugLogger.error("Unexpected response type");
         }
     }
 
-    public void deposit(String accountNumber, double amount) throws IOException, ClassNotFoundException {
-        authenticate();
+    public void deposit(String accountNumber, String accountPin, double amount) throws IOException, ProtocolException {
+        checkConnection();
 
-        checkConnectionAndAuthentication();
-
-        sendMessage(new DepositRequest(accountNumber, amount));
-        Message response = receiveResponse();
+        sendRequest(new DepositRequest(accountNumber, accountPin, amount));
+        Response response = receiveResponse();
 
         if (response instanceof DepositResponse depositResponse) {
             if (depositResponse.isSuccess()) {
-                logger.info("Deposit successful");
+                display.display("{\"account:\"%s\",\"deposit\":%.2f}", accountNumber, amount);
             } else {
-                logger.error("Deposit failed: %s", depositResponse.getStatus());
+                debugLogger.error("Deposit failed: %s", depositResponse.getStatus());
             }
         } else {
-            logger.error("Unexpected response type");
+            debugLogger.error("Unexpected response type");
         }
     }
 
-    public void withdraw(String accountNumber, double amount) throws IOException, ClassNotFoundException {
-        authenticate();
+    public void withdraw(String accountNumber, String accountPin, double amount) throws IOException, ProtocolException {
+        checkConnection();
 
-        checkConnectionAndAuthentication();
-
-        sendMessage(new WithdrawRequest(accountNumber, amount));
-        Message response = receiveResponse();
+        sendRequest(new WithdrawRequest(accountNumber, accountPin, amount));
+        Response response = receiveResponse();
 
         if (response instanceof WithdrawResponse withdrawResponse) {
             if (withdrawResponse.isSuccess()) {
-                logger.info("Withdrawal successful");
+                display.display("{\"account:\"%s\",\"withdraw\":%.2f}", accountNumber, amount);
             } else {
-                logger.error("Withdrawal failed: %s", withdrawResponse.getStatus());
+                debugLogger.error("Withdrawal failed: %s", withdrawResponse.getStatus());
             }
         } else {
-            logger.error("Unexpected response type");
+            debugLogger.error("Unexpected response type");
         }
     }
 
-    public double getBalance(String accountNumber) throws IOException, ClassNotFoundException {
-        authenticate();
+    public void displayBalance(String accountNumber, String accountPin) throws IOException, ProtocolException {
+        checkConnection();
 
-        checkConnectionAndAuthentication();
-
-        sendMessage(new GetBalanceRequest(accountNumber));
-        Message response = receiveResponse();
+        sendRequest(new GetBalanceRequest(accountNumber, accountPin));
+        Response response = receiveResponse();
 
         if (response instanceof GetBalanceResponse balanceResponse) {
-            if (!balanceResponse.isSuccess()) {
-                logger.error("Balance inquiry failed: %s", balanceResponse.getStatus());
-                return 0.0;
+            if (balanceResponse.isSuccess()) {
+                display.display("{\"account:\"%s\",\"balance\":%.2f}", accountNumber, balanceResponse.getBalance());
+            } else {
+                debugLogger.error("Balance retrieval failed: %s", balanceResponse.getStatus());
             }
-            Double balance = balanceResponse.getBalance();
-            if (balance != null) {
-                return balance;
-            }
-        }
-
-        logger.error("Invalid balance response");
-        return 0.0;
-    }
-
-    private void authenticate() throws IOException, ClassNotFoundException {
-        sendMessage(new AuthenticateRequest("client"));
-        Message response = receiveResponse();
-
-        if (response instanceof AuthenticateResponse authenticateResponse && authenticateResponse.isAuthenticated()) {
-            authenticated = true;
         } else {
-            throw new IOException("Authentication failed");
+            debugLogger.error("Unexpected response type");
         }
     }
 
-    private void sendMessage(Message message) throws IOException {
-        out.writeObject(message);
-        out.flush();
+    private void sendRequest(Request request) throws ProtocolException {
+        String requestStr = protocolHandler.getSessionRequest(request);
+        out.println(requestStr);
     }
 
-    private Message receiveResponse() throws IOException, ClassNotFoundException {
-        return (Message) in.readObject();
+    private Response receiveResponse() throws IOException, ProtocolException {
+        String responseStr = in.readLine();
+        if (responseStr == null) {
+            throw new IOException("Server closed the connection");
+        }
+        return protocolHandler.processSessionResponse(responseStr);
     }
 
     private void checkConnection() throws IOException {
         if (!connected) {
             throw new IOException("Not connected to the bank server");
         }
-    }
-
-    private void checkAuthentication() throws IOException {
-        if (!authenticated) {
-            throw new IOException("Not authenticated with the bank server");
-        }
-    }
-
-    private void checkConnectionAndAuthentication() throws IOException {
-        checkConnection();
-        checkAuthentication();
     }
 }
