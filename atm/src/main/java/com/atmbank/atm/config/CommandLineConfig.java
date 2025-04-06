@@ -5,8 +5,6 @@ import org.apache.commons.cli.*;
 import java.util.regex.Pattern;
 
 public class CommandLineConfig {
-    private static final String NUMBER_REGEX = "(0|[1-9][0-9]*)";
-
     private static final double MIN_AMOUNT = 0.00;
     private static final double MAX_AMOUNT = 4294967295.99;
     private static final String[] FILE_NAME_BLACKLIST = {".", ".."};

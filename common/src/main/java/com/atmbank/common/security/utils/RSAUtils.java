@@ -16,7 +16,7 @@ public class RSAUtils {
     private static final String SIGNATURE_ALGORITHM = Constants.RSA_SIGNATURE_ALGORITHM;
 
     public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(ALGORITHM);
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM);
         keyPairGenerator.initialize(KEY_SIZE);
         return keyPairGenerator.generateKeyPair();
     }
